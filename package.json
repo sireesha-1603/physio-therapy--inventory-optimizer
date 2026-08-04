@@ -1,0 +1,13 @@
+{
+  "name": "physio-demand-inventory-optimizer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Enterprise operations workspace for Physiotherapy Demand, Inventory & Procurement Optimiser",
+  "scripts": {
+    "dev": "npm run dev --prefix frontend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:backend": "npm run dev --prefix backend",
+    "build": "npm run build --prefix frontend",
+    "seed": "npm run seed --prefix backend"
+  }
+}
