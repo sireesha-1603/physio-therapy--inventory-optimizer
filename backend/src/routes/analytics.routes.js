@@ -1,3 +1,3 @@
-const router=require('express').Router();const {protect}=require('../middleware/auth');router.use(protect)
-router.get('/dashboard',(_req,res)=>res.json({success:true,data:{inventoryValue:2480000,itemsInStock:1248,stockoutRisks:12,pendingApprovals:8,forecastAccuracy:92.4}}))
+const router=require('express').Router();const {protect}=require('../middleware/auth');const Item=require('../models/InventoryItem');const Recommendation=require('../models/AIRecommendation');router.use(protect)
+router.get('/dashboard',async(_req,res,next)=>{try{const [items,pending]=await Promise.all([Item.find({deletedAt:null}).lean(),Recommendation.countDocuments({status:'pending'})]);const inventoryValue=items.reduce((sum,item)=>sum+item.currentStock*item.unitCost,0);res.json({success:true,data:{inventoryValue,itemsInStock:items.length,stockoutRisks:items.filter(item=>item.currentStock<=item.reorderPoint).length,pendingApprovals:pending,forecastAccuracy:null}})}catch(error){next(error)}})
 module.exports=router

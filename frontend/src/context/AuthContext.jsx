@@ -1,89 +1,35 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState } from 'react'
+import api from '../services/api'
 
 const AuthContext = createContext(null)
-
 export const ROLES = {
-  PROCUREMENT_MANAGER: { id: 'procurement_manager', name: 'Procurement Manager', scope: 'Enterprise' },
-  INVENTORY_PLANNER: { id: 'inventory_planner', name: 'Inventory Planner', scope: 'All Clinics' },
-  WAREHOUSE_USER: { id: 'warehouse_user', name: 'Warehouse User', scope: 'Central Hub' },
-  SUPPLIER: { id: 'supplier', name: 'Supplier Partner', scope: 'Contracted Supplies' },
-  FINANCE_REVIEWER: { id: 'finance_reviewer', name: 'Finance Reviewer', scope: 'Financial Approvals' },
-  ADMINISTRATOR: { id: 'administrator', name: 'System Administrator', scope: 'Global Admin' }
+  PROCUREMENT_MANAGER:{id:'procurement_manager',name:'Procurement Manager',scope:'Enterprise'}, INVENTORY_PLANNER:{id:'inventory_planner',name:'Inventory Planner',scope:'All Clinics'}, WAREHOUSE_USER:{id:'warehouse_user',name:'Warehouse User',scope:'Central Hub'}, SUPPLIER:{id:'supplier',name:'Supplier Partner',scope:'Contracted Supplies'}, FINANCE_REVIEWER:{id:'finance_reviewer',name:'Finance Reviewer',scope:'Financial Approvals'}, ADMINISTRATOR:{id:'administrator',name:'System Administrator',scope:'Global Admin'}
 }
-
-const DEFAULT_USER = {
-  id: 'usr_001',
-  name: 'Arjun Sharma',
-  email: 'arjun.sharma@physioflow.local',
-  role: 'inventory_planner',
-  roleName: 'Inventory Planner',
-  scope: 'Koregaon Park & Bandra Clinics',
-  avatar: 'AS',
-  lastLogin: '2026-08-04 09:14 AM'
-}
-
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('physioflow_user')
-    return saved ? JSON.parse(saved) : DEFAULT_USER
-  })
-  const [token, setToken] = useState(() => localStorage.getItem('physioflow_token') || 'mock_jwt_token_2026')
-  const [isAuthenticated, setIsAuthenticated] = useState(true)
-
-  const login = (email, password, roleKey = 'inventory_planner', remember = true) => {
-    const roleObj = ROLES[roleKey.toUpperCase()] || ROLES.INVENTORY_PLANNER
-    const loggedUser = {
-      id: `usr_${Date.now().toString().slice(-4)}`,
-      name: email.split('@')[0].replace('.', ' ').toUpperCase(),
-      email,
-      role: roleObj.id,
-      roleName: roleObj.name,
-      scope: roleObj.scope,
-      avatar: email.substring(0, 2).toUpperCase(),
-      lastLogin: new Date().toLocaleString()
-    }
-    const mockToken = `jwt_${Date.now()}_${roleObj.id}`
-    
-    setUser(loggedUser)
-    setToken(mockToken)
-    setIsAuthenticated(true)
-
-    if (remember) {
-      localStorage.setItem('physioflow_user', JSON.stringify(loggedUser))
-      localStorage.setItem('physioflow_token', mockToken)
-    }
-    return loggedUser
+const storage = () => localStorage.getItem('physioflow_token') ? localStorage : sessionStorage
+const savedUser=()=>{try{return JSON.parse(storage().getItem('physioflow_user')||'null')}catch{return null}}
+export function AuthProvider({children}) {
+  const [user,setUser]=useState(savedUser)
+  const [token,setToken]=useState(()=>storage().getItem('physioflow_token'))
+  const [isAuthenticated,setIsAuthenticated]=useState(()=>Boolean(storage().getItem('physioflow_token') && savedUser()))
+  const login=async(email,password,remember=true)=>{
+    const response=await api.post('/auth/login',{email,password})
+    const {token:jwt,user:apiUser}=response.data.data
+    const role=Object.values(ROLES).find(value=>value.id===apiUser.role)
+    const userData={...apiUser,roleName:role?.name||apiUser.role,scope:role?.scope||'Assigned scope',avatar:apiUser.name.split(' ').map(part=>part[0]).join('').slice(0,2).toUpperCase()}
+    const targetStorage=remember ? localStorage : sessionStorage
+    const otherStorage=remember ? sessionStorage : localStorage
+    otherStorage.removeItem('physioflow_token'); otherStorage.removeItem('physioflow_user')
+    targetStorage.setItem('physioflow_token',jwt); targetStorage.setItem('physioflow_user',JSON.stringify(userData))
+    setToken(jwt); setUser(userData); setIsAuthenticated(true)
+    return userData
   }
-
-  const logout = () => {
-    setUser(null)
-    setToken(null)
-    setIsAuthenticated(false)
-    localStorage.removeItem('physioflow_user')
-    localStorage.removeItem('physioflow_token')
+  const switchRole=(roleId)=>{
+    const role=Object.values(ROLES).find(value=>value.id===roleId)
+    if(!role || !user) return
+    const userData={...user,role:role.id,roleName:role.name,scope:role.scope}
+    storage().setItem('physioflow_user',JSON.stringify(userData)); setUser(userData)
   }
-
-  const switchRole = (roleId) => {
-    const roleObj = Object.values(ROLES).find(r => r.id === roleId) || ROLES.INVENTORY_PLANNER
-    const updatedUser = {
-      ...user,
-      role: roleObj.id,
-      roleName: roleObj.name,
-      scope: roleObj.scope
-    }
-    setUser(updatedUser)
-    localStorage.setItem('physioflow_user', JSON.stringify(updatedUser))
-  }
-
-  return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated, login, logout, switchRole, ROLES }}>
-      {children}
-    </AuthContext.Provider>
-  )
+  const logout=()=>{setUser(null);setToken(null);setIsAuthenticated(false);[localStorage,sessionStorage].forEach(item=>{item.removeItem('physioflow_user');item.removeItem('physioflow_token')})}
+  return <AuthContext.Provider value={{user,token,isAuthenticated,login,logout,switchRole,ROLES}}>{children}</AuthContext.Provider>
 }
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (!context) throw new Error('useAuth must be used within an AuthProvider')
-  return context
-}
+export function useAuth(){const context=useContext(AuthContext);if(!context)throw new Error('useAuth must be used within an AuthProvider');return context}

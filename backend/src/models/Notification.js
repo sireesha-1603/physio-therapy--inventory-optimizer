@@ -1,0 +1,2 @@
+const mongoose = require('mongoose')
+module.exports = mongoose.model('Notification', new mongoose.Schema({ recipient:{type:mongoose.Schema.Types.ObjectId,ref:'User',index:true}, title:{type:String,required:true}, message:String, category:{type:String,default:'Alerts'}, severity:{type:String,enum:['info','warning','critical'],default:'info'}, readAt:Date, link:String, deletedAt:Date }, {timestamps:true}))

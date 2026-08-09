@@ -37,12 +37,16 @@ export function InventoryDetailPage({ addToast }) {
     return 0
   })
 
-  const handleCreateSubmit = (e) => {
+  const handleCreateSubmit = async (e) => {
     e.preventDefault()
     if (!newItem.name) return
-    addItem(newItem, user?.name, user?.roleName)
-    addToast('Item Created', `Added ${newItem.name} to inventory`, 'success')
-    setShowAddModal(false)
+    try {
+      await addItem(newItem)
+      addToast('Item Created', `Added ${newItem.name} to inventory`, 'success')
+      setShowAddModal(false)
+    } catch (error) {
+      addToast('Unable to add item', error.response?.data?.error?.message || 'Check that the backend is running and try again.', 'error')
+    }
   }
 
   return (
@@ -168,7 +172,7 @@ export function InventoryDetailPage({ addToast }) {
             <div className="modal-footer">
               <button className="btn-outline" onClick={() => setSelectedItem(null)}>Close</button>
               {canEdit && (
-                <button className="btn-primary" onClick={() => { updateItem(selectedItem.id, { stock: selectedItem.stock + 10 }); addToast('Stock Updated', 'Added +10 stock', 'success'); setSelectedItem(null); }}>
+                <button className="btn-primary" onClick={async () => { try { await updateItem(selectedItem.id, { stock: selectedItem.stock + 10 }); addToast('Stock Updated', 'Added +10 stock', 'success'); setSelectedItem(null) } catch (error) { addToast('Unable to update stock', error.response?.data?.error?.message || 'Please try again.', 'error') } }}>
                   + Adjust Stock (+10)
                 </button>
               )}

@@ -1,0 +1,2 @@
+const mongoose = require('mongoose')
+module.exports = mongoose.model('Batch', new mongoose.Schema({ batchNumber:{type:String,required:true,unique:true}, item:{type:mongoose.Schema.Types.ObjectId,ref:'InventoryItem',required:true,index:true}, warehouse:{type:mongoose.Schema.Types.ObjectId,ref:'Warehouse'}, quantity:{type:Number,min:0,required:true}, receivedAt:Date, expiresAt:{type:Date,index:true}, status:{type:String,enum:['available','quarantined','expired'],default:'available'}, deletedAt:Date }, {timestamps:true}))

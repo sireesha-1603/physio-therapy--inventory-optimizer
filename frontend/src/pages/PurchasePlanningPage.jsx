@@ -2,13 +2,20 @@ import { useState } from 'react'
 import { useData } from '../context/DataContext'
 
 export function PurchasePlanningPage({ addToast, onOpenScenario }) {
-  const { suppliers, items } = useData()
+  const { suppliers, items, purchaseOrders, createPurchaseOrder } = useData()
   const [activeTab, setActiveTab] = useState('workbench') // 'workbench' | 'scorecards' | 'allocations'
   const [simResults, setSimResults] = useState(null)
 
   const handleSimulate = (params) => {
     setSimResults(params)
     addToast('Scenario Simulation Executed', `Simulated +${params.demandSpike}% demand surge and +${params.leadTimeDelay}d supplier delay`, 'info')
+  }
+  const createOrder = async () => {
+    const item = items.find(record => record.stock <= record.safetyStock) || items[0]
+    const supplier = suppliers[0]
+    if (!item || !supplier) return addToast('Cannot create order', 'Create an inventory item and supplier first.', 'error')
+    try { await createPurchaseOrder({ supplierId:supplier.id, itemId:item.id, quantity:Math.max(item.safetyStock * 2 - item.stock, 1) }); addToast('PO Created', `Purchase order created for ${supplier.name}`, 'success') }
+    catch (error) { addToast('Unable to create purchase order', error.response?.data?.error?.message || 'Please try again.', 'error') }
   }
 
   return (
@@ -70,7 +77,8 @@ export function PurchasePlanningPage({ addToast, onOpenScenario }) {
                   <th>ACTION</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody>{purchaseOrders.length ? purchaseOrders.map(order => <tr key={order.id}><td><strong>{order.number}</strong></td><td>{order.itemName}</td><td>{order.supplierName}</td><td>{order.quantity} units</td><td>₹{Number(order.totalAmount || 0).toLocaleString()}</td><td><span className="type reorder">{order.status}</span></td><td><span style={{ color: '#22c55e', fontWeight: 'bold' }}>Saved</span></td></tr>) : <tr><td colSpan="7" style={{ textAlign: 'center' }}>No purchase orders yet.</td></tr>}
+              {/*
                 <tr>
                   <td><strong>PO-8812</strong></td>
                   <td>Therapeutic Ultrasound Gel 5L</td>
@@ -89,9 +97,10 @@ export function PurchasePlanningPage({ addToast, onOpenScenario }) {
                   <td><span className="type transfer">Approved</span></td>
                   <td><span style={{ color: '#22c55e', fontWeight: 'bold' }}>Approved ✓</span></td>
                 </tr>
-              </tbody>
+              */}</tbody>
             </table>
           </div>
+          <button className="btn-primary" style={{ marginTop: '14px' }} onClick={createOrder}>Create replenishment order</button>
         </div>
       )}
 

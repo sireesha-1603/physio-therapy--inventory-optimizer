@@ -20,12 +20,11 @@ export function UserManagementPage({ addToast }) {
     u.roleName.toLowerCase().includes(search.toLowerCase())
   )
 
-  const handleUserSubmit = (e) => {
+  const handleUserSubmit = async (e) => {
     e.preventDefault()
     if (!newUser.email || !newUser.name) return
-    addUser(newUser, currentUser?.name, currentUser?.roleName)
-    addToast('User Account Created', `Issued account for ${newUser.name}`, 'success')
-    setShowAddModal(false)
+    try { await addUser(newUser); addToast('User Account Created', `Issued account for ${newUser.name}`, 'success'); setShowAddModal(false) }
+    catch (error) { addToast('Unable to create account', error.response?.data?.error?.message || 'Please try again.', 'error') }
   }
 
   return (
@@ -88,7 +87,7 @@ export function UserManagementPage({ addToast }) {
                   </td>
                   <td>
                     {isAdmin ? (
-                      <button className="btn-outline" style={{ padding: '3px 8px', fontSize: '10px' }} onClick={() => toggleUserStatus(u.id, currentUser?.name, currentUser?.roleName)}>
+                      <button className="btn-outline" style={{ padding: '3px 8px', fontSize: '10px' }} onClick={async () => { try { await toggleUserStatus(u.id); addToast('User status updated', `${u.name}'s access was updated.`, 'success') } catch (error) { addToast('Unable to update user', error.response?.data?.error?.message || 'Please try again.', 'error') } }}>
                         {u.status === 'Active' ? 'Deactivate' : 'Activate'}
                       </button>
                     ) : (

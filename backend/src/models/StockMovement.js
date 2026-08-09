@@ -1,0 +1,2 @@
+const mongoose = require('mongoose')
+module.exports = mongoose.model('StockMovement', new mongoose.Schema({ item:{type:mongoose.Schema.Types.ObjectId,ref:'InventoryItem',required:true,index:true}, type:{type:String,enum:['receipt','issue','transfer_in','transfer_out','adjustment'],required:true}, quantity:{type:Number,required:true}, fromWarehouse:String, toWarehouse:String, reference:String, performedBy:{type:mongoose.Schema.Types.ObjectId,ref:'User'}, notes:String }, {timestamps:true}))

@@ -25,7 +25,7 @@ export function NotificationsPage({ addToast }) {
         </div>
 
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button className="btn-outline" onClick={() => { clearNotifications(); addToast('Notifications Cleared', '', 'info'); }}>
+          <button className="btn-outline" onClick={async () => { try { await clearNotifications(); addToast('Notifications Cleared', '', 'info') } catch { addToast('Unable to clear notifications', 'Please try again.', 'error') } }}>
             Clear All
           </button>
         </div>
@@ -69,12 +69,12 @@ export function NotificationsPage({ addToast }) {
 
                 <div style={{ display: 'flex', gap: '6px' }}>
                   {!n.read && (
-                    <button className="btn-outline" style={{ fontSize: '10px', padding: '4px 8px' }} onClick={() => markNotificationRead(n.id)}>
+                    <button className="btn-outline" style={{ fontSize: '10px', padding: '4px 8px' }} onClick={() => markNotificationRead(n.id).catch(() => addToast('Unable to update notification', 'Please try again.', 'error'))}>
                       Mark Read
                     </button>
                   )}
                   {n.link && (
-                    <button className="btn-primary" style={{ fontSize: '10px', padding: '4px 8px' }} onClick={() => { markNotificationRead(n.id); navigate(n.link); }}>
+                    <button className="btn-primary" style={{ fontSize: '10px', padding: '4px 8px' }} onClick={async () => { try { await markNotificationRead(n.id); navigate(n.link) } catch { addToast('Unable to update notification', 'Please try again.', 'error') } }}>
                       Open Record →
                     </button>
                   )}

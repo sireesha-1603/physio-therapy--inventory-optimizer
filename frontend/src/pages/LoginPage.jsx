@@ -6,25 +6,29 @@ export function LoginPage({ addToast }) {
   const { login, ROLES } = useAuth()
   const navigate = useNavigate()
   
-  const [email, setEmail] = useState('arjun.sharma@physioflow.local')
-  const [password, setPassword] = useState('Password123!')
+  const [email, setEmail] = useState('admin@physioflow.local')
+  const [password, setPassword] = useState('ChangeMe!2026')
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(true)
-  const [selectedRole, setSelectedRole] = useState('inventory_planner')
   const [isLoading, setIsLoading] = useState(false)
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [forgotEmail, setForgotEmail] = useState('')
+  const [loginError, setLoginError] = useState('')
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault()
     setIsLoading(true)
+    setLoginError('')
 
-    setTimeout(() => {
-      login(email, password, selectedRole, rememberMe)
+    try {
+      const loggedUser = await login(email, password, rememberMe)
       setIsLoading(false)
-      addToast('Authenticated Successfully', `Welcome back! Logged in as ${ROLES[selectedRole.toUpperCase()]?.name}`, 'success')
-      navigate('/')
-    }, 600)
+      addToast('Authenticated Successfully', `Welcome back! Logged in as ${loggedUser.roleName}`, 'success')
+      navigate('/', { replace: true })
+    } catch (error) {
+      const message = error.response?.data?.error?.message || 'Unable to reach the API. Start the backend on port 5000 and try again.'
+      setIsLoading(false); setLoginError(message); addToast('Sign in failed', message, 'error')
+    }
   }
 
   const handleForgotSubmit = (e) => {
@@ -77,14 +81,6 @@ export function LoginPage({ addToast }) {
             </div>
           </div>
 
-          <div className="form-group">
-            <label>Assigned Role (RBAC Target)</label>
-            <select className="form-select" value={selectedRole} onChange={e => setSelectedRole(e.target.value)}>
-              {Object.values(ROLES).map(r => (
-                <option key={r.id} value={r.id}>{r.name} ({r.scope})</option>
-              ))}
-            </select>
-          </div>
 
           <div className="login-row">
             <label className="checkbox-label">
@@ -103,6 +99,7 @@ export function LoginPage({ addToast }) {
           <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '12px' }} disabled={isLoading}>
             {isLoading ? 'Authenticating with JWT...' : 'Sign In to Workspace'}
           </button>
+          {loginError && <p className="login-error" role="alert">{loginError}</p>}
         </form>
       </div>
 

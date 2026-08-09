@@ -4,7 +4,15 @@ import { useData } from '../context/DataContext'
 
 export function ReorderRecommendationsPage({ addToast, onOpenOverride }) {
   const { user } = useAuth()
-  const { recommendations, updateRecommendation } = useData()
+  const { recommendations, updateRecommendation, generateRecommendations } = useData()
+  const [isGenerating, setIsGenerating] = useState(false)
+
+  const handleGenerate = async () => {
+    setIsGenerating(true)
+    try { const count = await generateRecommendations(); addToast('AI recommendations generated', `${count} new recommendations were saved.`, 'success') }
+    catch (error) { addToast('AI generation failed', error.response?.data?.error?.message || 'Check the backend AI configuration.', 'error') }
+    finally { setIsGenerating(false) }
+  }
 
   const handleAccept = (rec) => {
     updateRecommendation(rec.id, 'Approved', 'Accepted AI recommendation', user?.name, user?.roleName)
@@ -26,6 +34,7 @@ export function ReorderRecommendationsPage({ addToast, onOpenOverride }) {
             <h2>AI Reorder, Stock Transfer & Supplier Recommendations <span className="spark">✦</span></h2>
             <p>Automated suggestions based on service level targets (98%), expiry risks, and contractual supplier MOQs</p>
           </div>
+          <button className="btn-primary" onClick={handleGenerate} disabled={isGenerating}>{isGenerating ? 'Generating…' : 'Generate AI Recommendations'}</button>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '20px' }}>

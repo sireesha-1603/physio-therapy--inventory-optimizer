@@ -1,0 +1,2 @@
+const mongoose=require('mongoose')
+module.exports=mongoose.model('DemandForecast',new mongoose.Schema({category:{type:String,index:true},periods:[{label:String,actual:Number,forecast:Number,lower:Number,upper:Number}],confidence:Number,inputs:[String],sourceSnapshot:mongoose.Schema.Types.Mixed,modelVersion:String,status:{type:String,default:'completed'},generatedBy:{type:mongoose.Schema.Types.ObjectId,ref:'User'}},{timestamps:true}))
